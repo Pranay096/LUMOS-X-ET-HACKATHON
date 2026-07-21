@@ -1,0 +1,32 @@
+# Environment files — NEVER commit real credentials
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+*.egg
+
+# Runtime-generated artifacts (created when the pipeline actually runs —
+# not source, so not committed; regenerate with the scripts in ingestion/)
+ingestion/extracted_graph.json
+compliance/gaps.json
+rag/test_results.json
+
+# Node (if anything uses it)
+node_modules/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
