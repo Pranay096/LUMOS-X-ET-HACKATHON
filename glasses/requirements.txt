@@ -1,0 +1,10 @@
+# Install these ON THE PI ZERO W (not your laptop)
+requests>=2.31.0
+opencv-python-headless>=4.9.0
+luma.oled>=3.13.0
+
+# picamera2 is normally pre-installed on Raspberry Pi OS images.
+# If missing: sudo apt install -y python3-picamera2
+
+# For generating demo QR codes, run this on your LAPTOP instead:
+#   pip install "qrcode[pil]"

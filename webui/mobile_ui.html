@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Lumos AI — Field Console</title>
+<style>
+  :root {
+    --bg: #0B0F14;
+    --surface: #131A22;
+    --surface-2: #1B2530;
+    --border: #26333F;
+    --text: #E8EEF2;
+    --text-dim: #8CA0AF;
+    --cyan: #3FD8E8;
+    --amber: #FF9A3D;
+    --green: #4ADE80;
+    --red: #FF5D5D;
+    --mono: 'SF Mono', 'Consolas', 'Menlo', monospace;
+    --sans: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  header {
+    padding: 20px 16px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    font-size: 20px;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.offline { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  #conn-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+
+  nav {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+
+  nav button {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 14px 4px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+
+  nav button.active {
+    color: var(--cyan);
+    border-bottom-color: var(--cyan);
+  }
+
+  main {
+    padding: 16px;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  textarea, select, input[type=text] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    font-family: var(--sans);
+    margin-bottom: 14px;
+    resize: vertical;
+  }
+
+  textarea:focus, select:focus, input:focus {
+    outline: none;
+    border-color: var(--cyan);
+  }
+
+  button.submit {
+    width: 100%;
+    background: var(--cyan);
+    color: #04141A;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+
+  button.submit:active { opacity: 0.8; }
+  button.submit:disabled { background: var(--border); color: var(--text-dim); }
+
+  button.secondary {
+    width: 100%;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .result {
+    margin-top: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: none;
+  }
+
+  .result.show { display: block; }
+
+  .verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .verdict-light {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .verdict-light.PASS { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .verdict-light.FLAG { background: var(--red); box-shadow: 0 0 10px var(--red); }
+  .verdict-light.UNKNOWN { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+
+  .verdict-label {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .verdict-label.PASS { color: var(--green); }
+  .verdict-label.FLAG { color: var(--red); }
+  .verdict-label.UNKNOWN { color: var(--amber); }
+
+  .answer-text {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 9px;
+    border-radius: 100px;
+  }
+
+  .chip.citation { color: var(--cyan); border-color: rgba(63,216,232,0.3); }
+
+  .confidence-bar-track {
+    height: 4px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .confidence-bar-fill {
+    height: 100%;
+    background: var(--cyan);
+    border-radius: 2px;
+  }
+
+  .gap-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .gap-question { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .gap-meta { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .loading.show { display: block; }
+
+  .error-box {
+    background: rgba(255,93,93,0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    margin-top: 14px;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  .input-with-mic {
+    position: relative;
+  }
+
+  .input-with-mic textarea {
+    padding-right: 54px;
+  }
+
+  .mic-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .mic-btn.listening {
+    background: var(--red);
+    border-color: var(--red);
+    animation: pulse 1.2s infinite;
+  }
+
+  .mic-btn.unsupported {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255,93,93,0.5); }
+    70%  { box-shadow: 0 0 0 10px rgba(255,93,93,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,93,93,0); }
+  }
+
+  #mic-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin: -8px 0 14px 2px;
+    min-height: 14px;
+  }
+
+  #mic-status.active { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">LUMOS AI</div>
+  <h1>Field Console</h1>
+  <div id="conn-status"><span class="status-dot" id="status-dot"></span><span id="status-text">Checking connection…</span></div>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="ask">Ask</button>
+  <button class="tab-btn" data-tab="compliance">Compliance</button>
+  <button class="tab-btn" data-tab="gaps">Gaps</button>
+</nav>
+
+<main>
+
+  <!-- ASK PANEL -->
+  <section class="panel active" id="panel-ask">
+    <label for="ask-question">Question</label>
+    <div class="input-with-mic">
+      <textarea id="ask-question" rows="3" placeholder="e.g. How should I maintain PMP-204?"></textarea>
+      <button class="mic-btn" id="mic-btn" title="Speak your question">🎤</button>
+    </div>
+    <div id="mic-status"></div>
+    <button class="submit" id="ask-submit">Ask Copilot</button>
+    <div class="loading" id="ask-loading">Retrieving and reasoning…</div>
+    <div class="error-box" id="ask-error"></div>
+    <div class="result" id="ask-result">
+      <div class="answer-text" id="ask-answer"></div>
+      <div class="confidence-bar-track"><div class="confidence-bar-fill" id="ask-confidence-bar"></div></div>
+      <div class="meta-row" id="ask-citations"></div>
+    </div>
+  </section>
+
+  <!-- COMPLIANCE PANEL -->
+  <section class="panel" id="panel-compliance">
+    <label for="comp-equipment">Equipment</label>
+    <select id="comp-equipment">
+      <option value="PMP-204">PMP-204 — Hydraulic Coolant Pump</option>
+      <option value="CNV-112">CNV-112 — Main Feed Conveyor</option>
+      <option value="CMP-301">CMP-301 — Air Compressor Unit 1</option>
+      <option value="PRS-088">PRS-088 — Hydraulic Press Station</option>
+      <option value="GEN-450">GEN-450 — Standby DG Set</option>
+      <option value="WLD-077">WLD-077 — Robotic Welding Cell</option>
+    </select>
+
+    <label for="comp-observed">What do you observe?</label>
+    <textarea id="comp-observed" rows="3" placeholder="e.g. Technician working near pump without face shield"></textarea>
+    <button class="submit" id="comp-submit">Check Compliance</button>
+    <div class="loading" id="comp-loading">Checking against SOPs and regulations…</div>
+    <div class="error-box" id="comp-error"></div>
+    <div class="result" id="comp-result">
+      <div class="verdict-row">
+        <div class="verdict-light" id="comp-light"></div>
+        <div class="verdict-label" id="comp-verdict-label"></div>
+      </div>
+      <div class="answer-text" id="comp-explanation"></div>
+      <div class="meta-row" id="comp-meta"></div>
+    </div>
+  </section>
+
+  <!-- GAPS PANEL -->
+  <section class="panel" id="panel-gaps">
+    <button class="secondary" id="gaps-refresh" style="margin-bottom: 16px;">Refresh</button>
+    <div id="gaps-list"></div>
+  </section>
+
+</main>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────────────────
+  // Point this at your backend laptop's IP address on the plant Wi-Fi
+  // (NOT localhost — a phone browser can't reach your laptop's localhost).
+  // Find your laptop's IP with `ipconfig` (Windows) and look for IPv4 Address.
+  const API_BASE_URL = "http://192.168.1.100:8000";
+  // ────────────────────────────────────────────────────────────────────────
+
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+
+  async function checkConnection() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        statusDot.className = 'status-dot online';
+        statusText.textContent = 'Connected — ' + API_BASE_URL.replace('http://', '');
+      } else {
+        throw new Error('bad status');
+      }
+    } catch (e) {
+      statusDot.className = 'status-dot offline';
+      statusText.textContent = 'Cannot reach backend — check API_BASE_URL and Wi-Fi';
+    }
+  }
+  checkConnection();
+  setInterval(checkConnection, 15000);
+
+  // ── TAB NAVIGATION ─────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'gaps') loadGaps();
+    });
+  });
+
+  // ── VOICE INPUT (mic button) ──────────────────────────────────────────
+  // Uses the browser's built-in SpeechRecognition (Chrome/Samsung Internet
+  // on Android, Safari 14.5+ on iOS). Requires internet on the phone for
+  // the recognition service itself — separate from the backend's own
+  // network requirement. Falls back gracefully (button just does nothing
+  // useful) on unsupported browsers; typing still works normally.
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = document.getElementById('mic-btn');
+  const micStatus = document.getElementById('mic-status');
+  const askQuestionEl = document.getElementById('ask-question');
+
+  let recognition = null;
+  let isListening = false;
+
+  if (!SpeechRecognitionAPI) {
+    micBtn.classList.add('unsupported');
+    micBtn.title = 'Voice input not supported in this browser — try Chrome or Safari';
+  } else {
+    recognition = new SpeechRecognitionAPI();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      isListening = true;
+      micBtn.classList.add('listening');
+      micStatus.textContent = 'Listening…';
+      micStatus.classList.add('active');
+      askQuestionEl.value = '';
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      askQuestionEl.value = transcript;
+
+      if (event.results[event.results.length - 1].isFinal) {
+        micStatus.textContent = 'Got it — asking…';
+        // Small delay so the spoken question is visible on screen for a
+        // beat before it submits — reads better on camera than an instant cut.
+        setTimeout(() => {
+          document.getElementById('ask-submit').click();
+        }, 700);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      micStatus.textContent = event.error === 'no-speech'
+        ? 'Didn\'t catch that — tap the mic and try again'
+        : `Voice input error: ${event.error}`;
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      micBtn.classList.remove('listening');
+      micStatus.classList.remove('active');
+      setTimeout(() => { if (!isListening) micStatus.textContent = ''; }, 2000);
+    };
+
+    micBtn.addEventListener('click', () => {
+      if (isListening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    });
+  }
+
+  // ── ASK ─────────────────────────────────────────────────────────────────
+  document.getElementById('ask-submit').addEventListener('click', async () => {
+    const question = document.getElementById('ask-question').value.trim();
+    if (!question) return;
+
+    const loading = document.getElementById('ask-loading');
+    const errorBox = document.getElementById('ask-error');
+    const result = document.getElementById('ask-result');
+    const submitBtn = document.getElementById('ask-submit');
+
+    loading.classList.add('show');
+    errorBox.classList.remove('show');
+    result.classList.remove('show');
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+      const data = await res.json();
+
+      document.getElementById('ask-answer').textContent = data.answer || '(no answer returned)';
+      const conf = data.confidence ?? 0;
+      document.getElementById('ask-confidence-bar').style.width = Math.round(conf * 100) + '%';
+
+      const citationsEl = document.getElementById('ask-citations');
+      citationsEl.innerHTML = '';
+      (data.cited_sources || []).forEach(src => {
+        const chip = document.createElement('span');
+        chip.className = 'chip citation';
+        chip.textContent = src;
+        citationsEl.appendChild(chip);
+      });
+      if (data.flagged_recurring_pattern) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = '⚠ recurring pattern detected';
+        citationsEl.appendChild(chip);
+      }
+      if (data.used_superseded_check) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = '✓ checked for superseded docs';
+        citationsEl.appendChild(chip);
+      }
+
+      result.classList.add('show');
+    } catch (e) {
+      errorBox.textContent = 'Could not get an answer: ' + e.message;
+      errorBox.classList.add('show');
+    } finally {
+      loading.classList.remove('show');
+      submitBtn.disabled = false;
+    }
+  });
+
+  // ── COMPLIANCE ──────────────────────────────────────────────────────────
+  document.getElementById('comp-submit').addEventListener('click', async () => {
+    const equipment_id = document.getElementById('comp-equipment').value;
+    const observed_state = document.getElementById('comp-observed').value.trim();
+    if (!observed_state) return;
+
+    const loading = document.getElementById('comp-loading');
+    const errorBox = document.getElementById('comp-error');
+    const result = document.getElementById('comp-result');
+    const submitBtn = document.getElementById('comp-submit');
+
+    loading.classList.add('show');
+    errorBox.classList.remove('show');
+    result.classList.remove('show');
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/check-compliance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ equipment_id, observed_state }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error (${res.status})`);
+      }
+      const data = await res.json();
+
+      const verdict = data.verdict || 'UNKNOWN';
+      document.getElementById('comp-light').className = 'verdict-light ' + verdict;
+      document.getElementById('comp-verdict-label').className = 'verdict-label ' + verdict;
+      document.getElementById('comp-verdict-label').textContent = verdict;
+      document.getElementById('comp-explanation').textContent = data.explanation || '(no explanation given)';
+
+      const metaEl = document.getElementById('comp-meta');
+      metaEl.innerHTML = '';
+      if (data.violated_requirement) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = data.violated_requirement;
+        metaEl.appendChild(chip);
+      }
+      if (data.citation) {
+        const chip = document.createElement('span');
+        chip.className = 'chip citation';
+        chip.textContent = data.citation;
+        metaEl.appendChild(chip);
+      }
+      if (data.confidence !== undefined) {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = 'confidence: ' + Math.round(data.confidence * 100) + '%';
+        metaEl.appendChild(chip);
+      }
+
+      result.classList.add('show');
+    } catch (e) {
+      errorBox.textContent = 'Could not check compliance: ' + e.message;
+      errorBox.classList.add('show');
+    } finally {
+      loading.classList.remove('show');
+      submitBtn.disabled = false;
+    }
+  });
+
+  // ── DOCUMENTATION GAPS ──────────────────────────────────────────────────
+  async function loadGaps() {
+    const listEl = document.getElementById('gaps-list');
+    listEl.innerHTML = '<div class="empty-state">Loading…</div>';
+    try {
+      const res = await fetch(`${API_BASE_URL}/gaps`);
+      const data = await res.json();
+      const gaps = data.gaps || [];
+
+      if (gaps.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">No documentation gaps logged yet.<br>Low-confidence answers from the Ask tab will show up here.</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      gaps.forEach(gap => {
+        const item = document.createElement('div');
+        item.className = 'gap-item';
+        const date = new Date(gap.timestamp);
+        item.innerHTML = `
+          <div class="gap-question">${escapeHtml(gap.question)}</div>
+          <div class="gap-meta">confidence ${Math.round(gap.confidence * 100)}% · ${date.toLocaleString()}</div>
+        `;
+        listEl.appendChild(item);
+      });
+    } catch (e) {
+      listEl.innerHTML = '<div class="empty-state">Could not load gaps — check connection.</div>';
+    }
+  }
+
+  document.getElementById('gaps-refresh').addEventListener('click', loadGaps);
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
