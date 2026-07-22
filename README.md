@@ -11,8 +11,6 @@ Empowering industrial maintenance and field technicians with context-aware, real
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 
-[Solution Doc](docs/Lumos_AI_Solution_Description.docx) · [Pitch Deck](docs/Lumos_AI_PS8_Pitch.pptx) · [Architecture](#architecture)
-
 </div>
 
 ---
